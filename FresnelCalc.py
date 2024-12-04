@@ -3,7 +3,6 @@ from tkinter import ttk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 import matplotlib.pyplot as plt
 import numpy as np
-
 import Fresnel  # Asegúrate de que las funciones de Fresnel estén correctamente importadas
 
 root = tk.Tk()
@@ -28,7 +27,6 @@ entry_nSub_Re.grid(row=1, column=1, padx=5)
 entry_nSub_Re.insert(0, "1.5")  # Valor por defecto
 
 plus_label = tk.Label(frame_params, text="+")
-
 plus_label.grid(row=1, column=2, padx=5)
 entry_nSub_Im = tk.Entry(frame_params)
 entry_nSub_Im.grid(row=1, column=3, padx=5)
@@ -61,19 +59,16 @@ combobox_operation = ttk.Combobox(root, values=operations, state="readonly")
 combobox_operation.pack(pady=10)
 combobox_operation.current(0)  # Seleccionar la primera opción por defecto
 
-
 # Variable para almacenar el canvas actual
 current_canvas = None
 
 # Función para actualizar el gráfico basado en la operación seleccionada
 def update_graph():
+    global current_canvas  # Declarar la variable global para usarla
 
-    global current_canvas  # Usar la variable global para el canvas actual
-
-        # Si ya existe un canvas, eliminarlo
+    # Si ya existe un canvas, eliminarlo
     if current_canvas:
         current_canvas.get_tk_widget().destroy()
-
 
     operation = combobox_operation.get()
     nInc = float(entry_nInc.get())  # Índice de refracción incidente
@@ -89,12 +84,19 @@ def update_graph():
 
     # Dependiendo de la operación seleccionada, calculamos y graficamos
     if operation == "reflected irradiance":
-        reflected = [Fresnel.Rs(nInc, nSub, angle) for angle in angles]
-        ax.plot(angles, reflected, label="Reflected Irradiance", color='blue')
+        # Calcular Rs (onda s) y Rp (onda p)
+        reflected_s = [Fresnel.Rs(nInc, nSub, angle) for angle in angles]
+        reflected_p = [Fresnel.Rp(nInc, nSub, angle) for angle in angles]
+
+        # Graficar las ondas s y p
+        ax.plot(angles, reflected_s, label="Reflected Irradiance (s)", color='blue')
+        ax.plot(angles, reflected_p, label="Reflected Irradiance (p)", color='red')
 
     elif operation == "transmitted irradiance":
-        transmitted = [Fresnel.Ts(nInc, nSub, angle) for angle in angles]
-        ax.plot(angles, transmitted, label="Transmitted Irradiance", color='red')
+        transmitted_s = [Fresnel.Ts(nInc, nSub, angle) for angle in angles]
+        transmitted_p = [Fresnel.Tp(nInc, nSub, angle) for angle in angles]
+        ax.plot(angles, transmitted_s, label="Transmitted Irradiance (s)", color='blue')
+        ax.plot(angles, transmitted_p, label="Transmitted Irradiance (p)", color='red')
 
     elif operation == "reflected diattenuation":
         reflected_Diattenuation = [Fresnel.Diattenuation(Fresnel.Rs(nInc, nSub, angle), Fresnel.Rp(nInc, nSub, angle)) for angle in angles]
@@ -109,40 +111,59 @@ def update_graph():
         ax.plot(angles, reflected_Retardance, label="Reflected Retardance", color='orange')
 
     elif operation == "transmitted retardance":
-        transmitted_Retardance = [Fresnel.Retardance(Fresnel.ts(nInc, nSub, angle), Fresnel.tp(nInc, nSub, angle)) for angle in angles]
-        ax.plot(angles, transmitted_Retardance, label="Transmitted Retardance", color='brown')
+        transmitted_Retardance_s = [Fresnel.Retardance(Fresnel.ts(nInc, nSub, angle), Fresnel.tp(nInc, nSub, angle)) for angle in angles]
+        transmitted_Retardance_p = [Fresnel.Retardance(Fresnel.tp(nInc, nSub, angle), Fresnel.tp(nInc, nSub, angle)) for angle in angles]
+        ax.plot(angles, transmitted_Retardance_s, label="Transmitted Retardance (s)", color='blue')
+        ax.plot(angles, transmitted_Retardance_p, label="Transmitted Retardance (p)", color='red')
 
     elif operation == "reflected amplitude - Abs":
-        reflected_Amplitude_Abs = [abs(Fresnel.rs(nInc, nSub, angle)) for angle in angles]
-        ax.plot(angles, reflected_Amplitude_Abs, label="Reflected Amplitude - Abs", color='cyan')
+        reflected_Amplitude_Abs_s = [abs(Fresnel.rs(nInc, nSub, angle)) for angle in angles]  # Onda s
+        reflected_Amplitude_Abs_p = [abs(Fresnel.rp(nInc, nSub, angle)) for angle in angles]  # Onda p
+        ax.plot(angles, reflected_Amplitude_Abs_s, label="Reflected Amplitude - Abs (s)", color='blue')
+        ax.plot(angles, reflected_Amplitude_Abs_p, label="Reflected Amplitude - Abs (p)", color='red')
+
 
     elif operation == "transmitted amplitude - Abs":
-        transmitted_Amplitude_Abs = [abs(Fresnel.ts(nInc, nSub, angle)) for angle in angles]
-        ax.plot(angles, transmitted_Amplitude_Abs, label="Transmitted Amplitude - Abs", color='magenta')
+        transmitted_Amplitude_Abs_s = [abs(Fresnel.ts(nInc, nSub, angle)) for angle in angles]
+        transmitted_Amplitude_Abs_p = [abs(Fresnel.tp(nInc, nSub, angle)) for angle in angles]
+        ax.plot(angles, transmitted_Amplitude_Abs_s, label="Transmitted Amplitude (s) - Abs", color='blue')
+        ax.plot(angles, transmitted_Amplitude_Abs_p, label="Transmitted Amplitude (p) - Abs", color='red')
 
     elif operation == "reflected amplitude - Phase":
-        reflected_Amplitude_Phase = [np.angle(Fresnel.rs(nInc, nSub, angle)) for angle in angles]
-        ax.plot(angles, reflected_Amplitude_Phase, label="Reflected Amplitude - Phase", color='yellow')
+        reflected_Amplitude_Phase_s = [np.angle(Fresnel.rs(nInc, nSub, angle)) for angle in angles]
+        reflected_Amplitude_Phase_p = [np.angle(Fresnel.rp(nInc, nSub, angle)) for angle in angles]
+        ax.plot(angles, reflected_Amplitude_Phase_s, label="Reflected Amplitude (s) - Phase", color='blue')
+        ax.plot(angles, reflected_Amplitude_Phase_p, label="Reflected Amplitude (p) - Phase", color='red')
 
     elif operation == "transmitted amplitude - Phase":
-        transmitted_Amplitude_Phase = [np.angle(Fresnel.ts(nInc, nSub, angle)) for angle in angles]
-        ax.plot(angles, transmitted_Amplitude_Phase, label="Transmitted Amplitude - Phase", color='gray')
+        transmitted_Amplitude_Phase_s = [np.angle(Fresnel.ts(nInc, nSub, angle)) for angle in angles]
+        transmitted_Amplitude_Phase_p = [np.angle(Fresnel.tp(nInc, nSub, angle)) for angle in angles]
+        ax.plot(angles, transmitted_Amplitude_Phase_s, label="Transmitted Amplitude (s) - Phase", color='blue')
+        ax.plot(angles, transmitted_Amplitude_Phase_p, label="Transmitted Amplitude (p) - Phase", color='red')
 
     elif operation == "reflected amplitude - Real":
-        reflected_Amplitude_Real = [Fresnel.rs(nInc, nSub, angle).real for angle in angles]
-        ax.plot(angles, reflected_Amplitude_Real, label="Reflected Amplitude - Real", color='pink')
+        reflected_Amplitude_Real_s = [Fresnel.rs(nInc, nSub, angle).real for angle in angles]
+        reflected_Amplitude_Real_p = [Fresnel.rp(nInc, nSub, angle).real for angle in angles]
+        ax.plot(angles, reflected_Amplitude_Real_s, label="Reflected Amplitude (s) - Real", color='blue')
+        ax.plot(angles, reflected_Amplitude_Real_p, label="Reflected Amplitude (p) - Real", color='red')
 
     elif operation == "transmitted amplitude - Real":
-        transmitted_Amplitude_Real = [Fresnel.ts(nInc, nSub, angle).real for angle in angles]
-        ax.plot(angles, transmitted_Amplitude_Real, label="Transmitted Amplitude - Real", color='lime')
+        transmitted_Amplitude_Real_s = [Fresnel.ts(nInc, nSub, angle).real for angle in angles]
+        transmitted_Amplitude_Real_p = [Fresnel.tp(nInc, nSub, angle).real for angle in angles]
+        ax.plot(angles, transmitted_Amplitude_Real_s, label="Transmitted Amplitude (s) - Real", color='blue')
+        ax.plot(angles, transmitted_Amplitude_Real_p, label="Transmitted Amplitude (p) - Real", color='red')
 
     elif operation == "reflected amplitude - Imag":
-        reflected_Amplitude_Imag = [Fresnel.rs(nInc, nSub, angle).imag for angle in angles]
-        ax.plot(angles, reflected_Amplitude_Imag, label="Reflected Amplitude - Imag", color='violet')
+        reflected_Amplitude_Imag_s = [Fresnel.rs(nInc, nSub, angle).imag for angle in angles]
+        reflected_Amplitude_Imag_p = [Fresnel.rp(nInc, nSub, angle).imag for angle in angles]
+        ax.plot(angles, reflected_Amplitude_Imag_s, label="Reflected Amplitude (s) - Imag", color='blue')
+        ax.plot(angles, reflected_Amplitude_Imag_p, label="Reflected Amplitude (p) - Imag", color='red')
 
     elif operation == "transmitted amplitude - Imag":
-        transmitted_Amplitude_Imag = [Fresnel.ts(nInc, nSub, angle).imag for angle in angles]
-        ax.plot(angles, transmitted_Amplitude_Imag, label="Transmitted Amplitude - Imag", color='teal')
+        transmitted_Amplitude_Imag_s = [Fresnel.ts(nInc, nSub, angle).imag for angle in angles]
+        transmitted_Amplitude_Imag_p = [Fresnel.tp(nInc, nSub, angle).imag for angle in angles]
+        ax.plot(angles, transmitted_Amplitude_Imag_s, label="Transmitted Amplitude (s) - Imag", color='blue')
+        ax.plot(angles, transmitted_Amplitude_Imag_p, label="Transmitted Amplitude (p) - Imag", color='red')
 
     # Configurar etiquetas y leyenda
     ax.set_xlabel('Ángulo de incidencia (radianes)')
@@ -155,8 +176,9 @@ def update_graph():
     current_canvas.get_tk_widget().pack(pady=20)
     current_canvas.draw()
 
-        # Conectar el evento de movimiento del mouse
+    # Conectar el evento de movimiento del mouse
     current_canvas.mpl_connect("motion_notify_event", on_mouse_move)
+    current_canvas.mpl_connect("figure_leave_event", on_mouse_leave)
 
 # Función que se ejecuta al mover el mouse sobre el gráfico
 def on_mouse_move(event):
@@ -164,24 +186,28 @@ def on_mouse_move(event):
         x, y = event.xdata, event.ydata
         # Actualiza las coordenadas en la etiqueta
         label_coords.config(text=f"Coordenadas: ({x:.2f}, {y:.2f})")
-        # Mueve la etiqueta de coordenadas junto al puntero
-        label_coords.place(x=event.x + 10, y=event.y + 10)  # Mueve la etiqueta cerca del puntero
+        # Mueve la etiqueta cerca del puntero
+        label_coords.place(x=event.x + 10, y=root.winfo_height() - event.y + 10)  # Invertir solo el valor de y
+        label_coords.lift()  # Mover la etiqueta al frente
+
+# Función que oculta el label cuando el mouse sale del gráfico
+def on_mouse_leave(event):
+    label_coords.place_forget()  # Oculta el label cuando el mouse sale
 
 # Crear una etiqueta para mostrar las coordenadas del mouse
-label_coords = tk.Label(root, text="(0.00, 0.00)", font=("Helvetica", 8), bg="white")
-label_coords.pack_forget()  # Inicialmente, no mostrar
+label_coords = tk.Label(root, text="(0.00, 0.00)", font=("Helvetica", 8), bg="white", relief="solid", padx=5, pady=5)
+label_coords.place_forget()  # Inicialmente, no mostrar
 
-# Crear un botón para confirmar la selección y actualizar el gráfico
-boton_confirmar = tk.Button(root, text="Confirmar", command=update_graph)
-boton_confirmar.pack(pady=10)
-
-
+# Botón para actualizar el gráfico
+button_update = tk.Button(root, text="Actualizar Gráfico", command=update_graph)
+button_update.pack(pady=10)
 
 # Función para cerrar correctamente el script al cerrar la ventana
 def on_close():
     root.quit()  # Detiene el bucle de eventos
+
 # Asocia la función de cierre a la ventana
 root.protocol("WM_DELETE_WINDOW", on_close)
 
-# Ejecutar la ventana principal
+# Ejecutar la interfaz gráfica
 root.mainloop()
